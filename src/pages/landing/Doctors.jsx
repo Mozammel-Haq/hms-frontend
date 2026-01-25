@@ -29,7 +29,7 @@ const Doctors = () => {
   const getDoctors = async () => {
     try {
       const response = await axios.get('http://127.0.0.1:8000/api/public/doctors');
-
+      console.log(response.data);
       const { doctors, clinics, departments } = response.data;
 
       const normalizedDoctors = doctors.map(doc => {
@@ -60,7 +60,7 @@ const Doctors = () => {
 
         return {
           id: doc.id,
-          name: `Dr. ${doc.specialization}`,
+          name: `Dr. ${doc.user.name}`,
           specialty: doc.department?.name || doc.specialization,
           image: doc.profile_photo
             ? `http://127.0.0.1:8000/${doc.profile_photo}`
