@@ -4,43 +4,73 @@ import { MapPin, Phone, Clock, Navigation } from 'lucide-react';
 import Button from '../../components/common/Button';
 import axios from 'axios';
 import API_ENDPOINTS from '../../services/endpoints';
+import MedicalLoader from '../../components/loaders/MedicalLoader';
 
 
 
 const Locations = () => {
+  const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState([]);
+  const [activeMapQuery, setActiveMapQuery] = useState("");
   
+  const handleGetDirections = (query) => {
+    setActiveMapQuery(query);
+    setTimeout(() => {
+      const mapSection = document.getElementById('map-section');
+      if (mapSection) {
+        mapSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
   const getLocations = async () => {
-  try {
-    const res = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}${API_ENDPOINTS.PUBLIC.CLINICS}`
-    );
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}${API_ENDPOINTS.PUBLIC.CLINICS}`
+      );
 
-    const normalizedLocations = res.data.clinics.map((clinic) => ({
-      id: clinic.id,
-      name: clinic.name,
-      type: "Clinic", // or clinic.code / dynamic later
-      address: `${clinic.address_line_1}, ${clinic.city}`,
-      phone: clinic.phone,
-      hours: `${clinic.opening_time} - ${clinic.closing_time}`,
-      image: clinic.images?.length
-        ? `${import.meta.env.VITE_BACKEND_BASE_URL}/storage/${clinic.images[0].image_path}`
-        : "https://images.unsplash.com/photo-1587351021759-3e566b9af923",
-      mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        clinic.address_line_1
-      )}`,
-    }));
+      const normalizedLocations = res.data.clinics.map((clinic) => ({
+        id: clinic.id,
+        name: clinic.name,
+        type: "Clinic", 
+        address: `${clinic.address_line_1}, ${clinic.city}`,
+        mapQuery: encodeURIComponent(`${clinic.address_line_1}, ${clinic.city}`),
+        phone: clinic.phone,
+        hours: `${clinic.opening_time} - ${clinic.closing_time}`,
+        image: clinic.images?.length
+          ? `${import.meta.env.VITE_BACKEND_BASE_URL}/storage/${clinic.images[0].image_path}`
+          : "https://images.unsplash.com/photo-1587351021759-3e566b9af923",
+      }));
 
-    setLocations(normalizedLocations);
-  } catch (error) {
-    console.error('Error fetching Clinics:', error);
-  }
-};
+      setLocations(normalizedLocations);
+      // Set first location as default if available
+      if (normalizedLocations.length > 0) {
+        setActiveMapQuery(normalizedLocations[0].mapQuery);
+      }
+    } catch (error) {
+      console.error('Error fetching Clinics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     getLocations();
   }, []);
 
+  const selectedMapUrl = activeMapQuery 
+    ? `https://maps.google.com/maps?q=${activeMapQuery}&t=&z=13&ie=UTF8&iwloc=&output=embed`
+    : null;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20">
+        <MedicalLoader text="Loading locations..." />
+      </div>
+    );
+  }
+  
   return (
     <div className="pt-24 pb-20 bg-secondary-50 dark:bg-secondary-950 min-h-screen transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,7 +86,8 @@ const Locations = () => {
           {locations.map((loc) => (
             <div
               key={loc.id}
-              className="group border border-secondary-200 dark:border-secondary-800 rounded-2xl overflow-hidden hover:border-primary-500/50 transition-all duration-300 bg-white dark:bg-secondary-900"
+              onClick={() => setActiveMapQuery(loc.mapQuery)}
+              className="group border border-secondary-200 dark:border-secondary-800 rounded-2xl overflow-hidden hover:border-primary-500/50 transition-all duration-300 bg-white dark:bg-secondary-900 cursor-pointer"
             >
               {/* Image Container */}
               <div className="h-48 overflow-hidden relative">
@@ -94,28 +125,39 @@ const Locations = () => {
                   </div>
                 </div>
 
-                <a href={loc.mapLink} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button variant="outline" className="w-full border-secondary-200 dark:border-secondary-800 text-secondary-600 dark:text-secondary-300 hover:border-primary-500 hover:text-white hover:bg-primary-600 dark:hover:bg-secondary-800">
-                    <Navigation className="w-4 h-4 mr-2" />
-                    Get Directions
-                  </Button>
-                </a>
+                <Button 
+                  onClick={() => handleGetDirections(loc.mapQuery)}
+                  variant="outline" 
+                  className="w-full border-secondary-200 dark:border-secondary-800 text-secondary-600 dark:text-secondary-300 hover:border-primary-500 hover:text-white hover:bg-primary-600 dark:hover:bg-secondary-800"
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  View on Map
+                </Button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Map Placeholder */}
-        <div className="mt-20 rounded-2xl overflow-hidden border border-secondary-200 dark:border-secondary-800 h-96 relative bg-secondary-100 dark:bg-secondary-900 flex items-center justify-center animate-fade-in">
-             <div className="text-center">
-                 <MapPin className="w-12 h-12 text-secondary-400 dark:text-secondary-700 mx-auto mb-2" />
-                 <p className="text-secondary-500 font-medium">Interactive Map Integration</p>
-                 <p className="text-secondary-500 dark:text-secondary-600 text-sm">(Google Maps API would go here)</p>
-             </div>
-             {/* Simulating map UI */}
-             <div className="absolute bottom-4 right-4 bg-white/80 dark:bg-secondary-900/80 backdrop-blur p-2 rounded shadow-none border border-secondary-200 dark:border-secondary-800 text-xs text-secondary-500 dark:text-secondary-400">
-                 Map data ©2025 Google
-             </div>
+        {/* Interactive Map Section */}
+        <div id="map-section" className="mt-20 rounded-2xl overflow-hidden border border-secondary-200 dark:border-secondary-800 h-[500px] relative bg-secondary-100 dark:bg-secondary-900 shadow-lg animate-fade-in">
+             {selectedMapUrl ? (
+               <iframe
+                 width="100%"
+                 height="100%"
+                 frameBorder="0"
+                 scrolling="no"
+                 marginHeight="0"
+                 marginWidth="0"
+                 src={selectedMapUrl}
+                 title="Clinic Location Map"
+                 className="w-full h-full"
+               ></iframe>
+             ) : (
+               <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                 <MapPin className="w-16 h-16 text-secondary-300 dark:text-secondary-700 mb-4" />
+                 <h3 className="text-xl font-bold text-secondary-500 dark:text-secondary-400">Select a location to view on map</h3>
+               </div>
+             )}
         </div>
 
       </div>

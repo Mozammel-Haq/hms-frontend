@@ -4,8 +4,10 @@ import { MapPin, Phone, Clock, Navigation, CheckCircle2, X } from 'lucide-react'
 import Button from '../../components/common/Button';
 import axios from 'axios';
 import API_ENDPOINTS from '../../services/endpoints';
+import MedicalLoader from '../../components/loaders/MedicalLoader';
 
 const LocationDetails = () => {
+  const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -13,6 +15,7 @@ const LocationDetails = () => {
   // console.log("hello")
   const getLocationDetails = async () => {
   try {
+    setLoading(true);
     const res = await axios.get(
       `${import.meta.env.VITE_API_BASE_URL}${API_ENDPOINTS.PUBLIC.CLINIC_DETAILS(id)}`
     );
@@ -45,6 +48,8 @@ const LocationDetails = () => {
     setLocation(normalizedLocation);
   } catch (error) {
     console.error('Error fetching clinic details:', error);
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -52,6 +57,14 @@ const LocationDetails = () => {
     getLocationDetails();
   }, [id]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20">
+        <MedicalLoader text="Loading location details..." />
+      </div>
+    );
+  }
+  
   if (!location) {
     return (
       <div className="min-h-screen bg-secondary-50 dark:bg-secondary-950 flex flex-col items-center justify-center pt-20 transition-colors duration-300">

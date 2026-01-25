@@ -4,11 +4,12 @@ import { Search, MapPin, Star, GraduationCap, Calendar } from 'lucide-react';
 import Button from '../../components/common/Button';
 import axios from 'axios';
 import API_ENDPOINTS from '../../services/endpoints';
+import MedicalLoader from '../../components/loaders/MedicalLoader';
 
 const Doctors = () => {
   const [searchParams] = useSearchParams();
   const initialSpecialty = searchParams.get('specialty') || '';
-
+  const [loading, setLoading] = useState(true);
   const [doctors, setDoctors] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -28,8 +29,9 @@ const Doctors = () => {
 
   const getDoctors = async () => {
     const baseURL = import.meta.env.VITE_API_BASE_URL
-    console.log(`${API_ENDPOINTS.PUBLIC.DOCTORS}`)
+    // console.log(`${API_ENDPOINTS.PUBLIC.DOCTORS}`)
     try {
+      setLoading(true);
       const response = await axios.get(`${baseURL}${API_ENDPOINTS.PUBLIC.DOCTORS}`);
       console.log(response);
       const { doctors, clinics, departments } = response.data;
@@ -89,6 +91,8 @@ const Doctors = () => {
       setDepartments(departments);
     } catch (error) {
       console.error('Error fetching doctors:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -327,8 +331,11 @@ const Doctors = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {filteredDoctors.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {loading ? (
+  <MedicalLoader />
+) : filteredDoctors.length > 0 ? (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
             {filteredDoctors.map((doc, index) => (
               <div
                 key={doc.id}
