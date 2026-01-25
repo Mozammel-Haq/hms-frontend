@@ -1,72 +1,56 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapPin, Phone, Clock, Navigation, CheckCircle2, X } from 'lucide-react';
 import Button from '../../components/common/Button';
+import axios from 'axios';
+import API_ENDPOINTS from '../../services/endpoints';
 
 const LocationDetails = () => {
   const { id } = useParams();
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Mock Data (Expanded from Locations.jsx)
-  const locations = [
-    {
-      id: 1,
-      name: "Dhanmondi CityCare",
-      type: "Main Campus",
-      address: "123 Satmasjid Road, Dhanmondi, Dhaka 1209",
-      phone: "+880 1234 567 890",
-      hours: "Open 24/7",
-      image: "https://images.unsplash.com/photo-1587351021759-3e566b9af923?auto=format&fit=crop&q=80&w=800",
-      mapLink: "https://maps.google.com",
-      description: "Our Dhanmondi Main Campus is a state-of-the-art facility offering comprehensive medical services. As our flagship location, it houses our advanced trauma center, specialized surgical suites, and a full range of inpatient and outpatient services.",
-      services: ["24/7 Emergency", "Cardiology Center", "Advanced Surgery", "ICU & CCU", "Maternity Wing", "Pediatrics"],
-      gallery: [
-        "https://images.unsplash.com/photo-1587351021759-3e566b9af923?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1516549655169-df83a09217c6?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?auto=format&fit=crop&q=80&w=800"
-      ]
-    },
-    {
-      id: 2,
-      name: "Gulshan Specialist Clinic",
-      type: "Outpatient Center",
-      address: "45 Gulshan Avenue, Dhaka 1212",
-      phone: "+880 1987 654 321",
-      hours: "8:00 AM - 10:00 PM",
-      image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800",
-      mapLink: "https://maps.google.com",
-      description: "Located in the heart of Gulshan, this specialist clinic focuses on outpatient care, consultations, and specialized diagnostics. It provides a premium healthcare experience with reduced wait times and personalized attention.",
-      services: ["Specialist Consultations", "Diagnostic Lab", "Pharmacy", "Dental Care", "Physiotherapy"],
-      gallery: [
-        "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1596541223130-5d31a73fb6c6?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1516549655169-df83a09217c6?auto=format&fit=crop&q=80&w=800"
-      ]
-    },
-    {
-      id: 3,
-      name: "Uttara Diagnostic Center",
-      type: "Lab & Imaging",
-      address: "Sector 7, Uttara, Dhaka 1230",
-      phone: "+880 1555 555 555",
-      hours: "7:00 AM - 11:00 PM",
-      image: "https://images.unsplash.com/photo-1516549655169-df83a09217c6?auto=format&fit=crop&q=80&w=800",
-      mapLink: "https://maps.google.com",
-      description: "Our Uttara branch is a dedicated diagnostic center equipped with the latest imaging technology and laboratory equipment. We prioritize accuracy and speed in delivering test results to support effective treatment plans.",
-      services: ["MRI & CT Scan", "Digital X-Ray", "Ultrasound", "Pathology Lab", "Health Screenings"],
-      gallery: [
-        "https://images.unsplash.com/photo-1516549655169-df83a09217c6?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1579165466741-7f35a4755657?auto=format&fit=crop&q=80&w=800"
-      ]
-    }
-  ];
+  const [location, setLocation] = useState(null);
+  // console.log("hello")
+  const getLocationDetails = async () => {
+  try {
+    const res = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}${API_ENDPOINTS.PUBLIC.CLINIC_DETAILS(id)}`
+    );
 
-  const location = locations.find(loc => loc.id === parseInt(id));
+    const clinic = res.data.clinic;
+
+    const normalizedLocation = {
+      id: clinic.id,
+      name: clinic.name,
+      type: "Clinic", // or based on code/status later
+      address: `${clinic.address_line_1}, ${clinic.city}`,
+      phone: clinic.phone,
+      hours: `${clinic.opening_time.slice(0, 5)} - ${clinic.closing_time.slice(0, 5)}`,
+      description: clinic.about,
+      services: clinic.services || [],
+      image: clinic.images?.length
+        ? `${import.meta.env.VITE_BACKEND_BASE_URL}/storage/${clinic.images[0].image_path}`
+        : "https://images.unsplash.com/photo-1587351021759-3e566b9af923",
+      gallery: clinic.images?.length
+        ? clinic.images.map(
+            (img) =>
+              `${import.meta.env.VITE_BACKEND_BASE_URL}/storage/${img.image_path}`
+          )
+        : [],
+      mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        clinic.address_line_1
+      )}`,
+    };
+
+    setLocation(normalizedLocation);
+  } catch (error) {
+    console.error('Error fetching clinic details:', error);
+  }
+};
+
+  useEffect(() => {
+    getLocationDetails();
+  }, [id]);
 
   if (!location) {
     return (
@@ -82,7 +66,7 @@ const LocationDetails = () => {
   return (
     <div className="pt-20 min-h-screen bg-secondary-50 dark:bg-secondary-950 transition-colors duration-300">
       {/* Hero Section with Image */}
-      <div className="relative h-[400px] md:h-[500px]">
+      <div className="relative h-[300px] md:h-[400px]">
         <img 
           src={location.image} 
           alt={location.name} 

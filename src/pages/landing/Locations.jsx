@@ -1,42 +1,46 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Clock, Navigation } from 'lucide-react';
 import Button from '../../components/common/Button';
+import axios from 'axios';
+import API_ENDPOINTS from '../../services/endpoints';
 
-const locations = [
-  {
-    id: 1,
-    name: "Dhanmondi CityCare",
-    type: "Main Campus",
-    address: "123 Satmasjid Road, Dhanmondi, Dhaka 1209",
-    phone: "+880 1234 567 890",
-    hours: "Open 24/7",
-    image: "https://images.unsplash.com/photo-1587351021759-3e566b9af923?auto=format&fit=crop&q=80&w=800",
-    mapLink: "https://maps.google.com"
-  },
-  {
-    id: 2,
-    name: "Gulshan Specialist Clinic",
-    type: "Outpatient Center",
-    address: "45 Gulshan Avenue, Dhaka 1212",
-    phone: "+880 1987 654 321",
-    hours: "8:00 AM - 10:00 PM",
-    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800",
-    mapLink: "https://maps.google.com"
-  },
-  {
-    id: 3,
-    name: "Uttara Diagnostic Center",
-    type: "Lab & Imaging",
-    address: "Sector 7, Uttara, Dhaka 1230",
-    phone: "+880 1555 555 555",
-    hours: "7:00 AM - 11:00 PM",
-    image: "https://images.unsplash.com/photo-1516549655169-df83a09217c6?auto=format&fit=crop&q=80&w=800",
-    mapLink: "https://maps.google.com"
-  }
-];
+
 
 const Locations = () => {
+  const [locations, setLocations] = useState([]);
+  
+  const getLocations = async () => {
+  try {
+    const res = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}${API_ENDPOINTS.PUBLIC.CLINICS}`
+    );
+
+    const normalizedLocations = res.data.clinics.map((clinic) => ({
+      id: clinic.id,
+      name: clinic.name,
+      type: "Clinic", // or clinic.code / dynamic later
+      address: `${clinic.address_line_1}, ${clinic.city}`,
+      phone: clinic.phone,
+      hours: `${clinic.opening_time} - ${clinic.closing_time}`,
+      image: clinic.images?.length
+        ? `${import.meta.env.VITE_BACKEND_BASE_URL}/storage/${clinic.images[0].image_path}`
+        : "https://images.unsplash.com/photo-1587351021759-3e566b9af923",
+      mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        clinic.address_line_1
+      )}`,
+    }));
+
+    setLocations(normalizedLocations);
+  } catch (error) {
+    console.error('Error fetching Clinics:', error);
+  }
+};
+
+  useEffect(() => {
+    getLocations();
+  }, []);
+
   return (
     <div className="pt-24 pb-20 bg-secondary-50 dark:bg-secondary-950 min-h-screen transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

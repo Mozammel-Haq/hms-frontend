@@ -27,9 +27,11 @@ const Doctors = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const getDoctors = async () => {
+    const baseURL = import.meta.env.VITE_API_BASE_URL
+    console.log(`${API_ENDPOINTS.PUBLIC.DOCTORS}`)
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/public/doctors');
-      console.log(response.data);
+      const response = await axios.get(`${baseURL}${API_ENDPOINTS.PUBLIC.DOCTORS}`);
+      console.log(response);
       const { doctors, clinics, departments } = response.data;
 
       const normalizedDoctors = doctors.map(doc => {
@@ -68,6 +70,8 @@ const Doctors = () => {
           rating: doc.appointments_count || 0,
           reviews: 'Appointments',
           education,
+          room: doc.consultation_room_number || 'Not assigned',
+          floor: doc.consultation_floor || 'Not assigned',
           location: primaryClinic
             ? `${primaryClinic.city}, ${primaryClinic.country}`
             : 'Clinic not assigned',
@@ -363,7 +367,7 @@ const Doctors = () => {
                     </p>
                     <p className="text-sm text-secondary-600 dark:text-secondary-400 flex items-center">
                       <MapPin className="w-4 h-4 mr-2" />
-                      {doc.location}
+                      {doc.location} - Room: ({doc.room}), Floor: {doc.floor}
                     </p>
                     <p className="text-sm text-secondary-600 dark:text-secondary-400 flex items-center">
                       <Calendar className="w-4 h-4 mr-2" />

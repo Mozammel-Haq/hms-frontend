@@ -21,7 +21,8 @@ export const API_ENDPOINTS = {
     DOCTORS: '/public/doctors',
     DOCTOR_DETAILS: (id) => `/public/doctors/${id}`,
     SERVICES: '/public/services',
-    CLINICS: '/public/clinics', // List of all clinics
+    CLINICS: '/public/clinics',
+    CLINIC_DETAILS: (id) => `/public/clinics/${id}`,
     PACKAGES: '/public/packages',
     FAQ: '/public/faq',
   },
