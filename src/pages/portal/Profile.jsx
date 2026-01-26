@@ -1,21 +1,129 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Shield, Edit2, Camera, Save } from 'lucide-react';
 import Button from '../../components/common/Button';
+import { useAuth } from '../../context/AuthContext';
+import { formatDate } from 'date-fns';
+import API_ENDPOINTS from '../../services/endpoints';
+import api from '../../services/api';
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState({
-    name: 'Mozammel Hoque',
-    email: 'mozammel@example.com',
-    phone: '+880 1712 345678',
-    address: '123, Green Road, Dhaka',
-    dob: '1995-08-15',
-    bloodGroup: 'A+',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    dob: '',
+    bloodGroup: '',
     avatar: null
   });
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    new_password_confirmation: ''
+  });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null); // NEW: Separate preview state
+  const { user: authUser, setUser: setAuthUser } = useAuth();
+
+  useEffect(() => {
+    if (authUser) {
+      setUser({
+        name: authUser.name || '',
+        patient_code: authUser.patient_code || '',
+        email: authUser.email || '',
+        phone: authUser.phone || '',
+        address: authUser.address || '',
+        dob: formatDate(new Date(authUser.date_of_birth), 'yyyy-MM-dd') || '',
+        bloodGroup: authUser.blood_group || '',
+        avatar: authUser.profile_photo || null
+      });
+      setAvatarPreview(null); // Reset preview when authUser changes
+    }
+  }, [authUser]);
 
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file)); // Store blob URL separately
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const formData = new FormData();
+      
+      // Append all fields (Laravel will handle empty values)
+      formData.append('name', user.name || '');
+      formData.append('email', user.email || '');
+      formData.append('phone', user.phone || '');
+      formData.append('address', user.address || '');
+      formData.append('date_of_birth', user.dob || '');
+      formData.append('blood_group', user.bloodGroup || '');
+      
+      // Append password fields only if they are filled
+      if (passwordData.current_password) {
+        formData.append('current_password', passwordData.current_password);
+      }
+      if (passwordData.new_password) {
+        formData.append('new_password', passwordData.new_password);
+      }
+      if (passwordData.new_password_confirmation) {
+        formData.append('new_password_confirmation', passwordData.new_password_confirmation);
+      }
+      
+      if (avatarFile) {
+        formData.append('profile_photo', avatarFile);
+      }
+
+      // Laravel doesn't support PUT with multipart/form-data well
+      // So we use POST with _method override
+      formData.append('_method', 'PUT');
+
+      const response = await api.post(`${API_ENDPOINTS.PATIENT.UPDATE_PROFILE}/${authUser.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log(response.data)
+      
+      if (response.status === 200) {
+        // Update authUser with the data from response (response.data.data contains the patient object)
+        const updatedPatient = response.data.data;
+        setAuthUser(updatedPatient);
+        setIsEditing(false);
+        setAvatarFile(null);
+        setAvatarPreview(null); // Clear preview after save
+        setPasswordData({ current_password: '', new_password: '', new_password_confirmation: '' }); // Reset password fields
+        console.log('Profile updated successfully');
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      if (error.response) {
+        console.error('Error details:', error.response.data);
+      }
+    }
+  };
+
+  // Helper function to get the correct avatar URL
+  const getAvatarUrl = () => {
+    if (avatarPreview) {
+      // If there's a preview (user just uploaded), use the blob URL
+      return avatarPreview;
+    } else if (user.avatar) {
+      // Otherwise use the server URL
+      return `${import.meta.env.VITE_BACKEND_BASE_URL}/${user.avatar}`;
+    }
+    return null;
   };
 
   return (
@@ -27,7 +135,7 @@ const Profile = () => {
         </div>
         <Button
           variant={isEditing ? 'primary' : 'outline'}
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={isEditing ? handleSave : () => setIsEditing(true)}
         >
           {isEditing ? <Save className="w-4 h-4 mr-2" /> : <Edit2 className="w-4 h-4 mr-2" />}
           {isEditing ? 'Save Changes' : 'Edit Profile'}
@@ -39,20 +147,34 @@ const Profile = () => {
         <div className="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-800 p-6 text-center">
           <div className="relative inline-block mb-4">
             <div className="w-32 h-32 rounded-full bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center text-4xl font-bold text-primary-600 dark:text-primary-400 overflow-hidden border-4 border-white dark:border-secondary-800 shadow-none">
-              {user.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              {getAvatarUrl() ? (
+                <img
+                  src={getAvatarUrl()}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 user.name.charAt(0)
               )}
             </div>
             {isEditing && (
-              <button className="absolute bottom-0 right-0 bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-full shadow-none transition-colors">
+              <label
+                htmlFor="avatarUpload"
+                className="absolute bottom-0 right-0 bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-full cursor-pointer"
+              >
                 <Camera className="w-4 h-4" />
-              </button>
+                <input
+                  id="avatarUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+              </label>
             )}
           </div>
           <h2 className="text-xl font-bold text-secondary-900 dark:text-white mb-1">{user.name}</h2>
-          <p className="text-secondary-500 dark:text-secondary-400 mb-4">Patient ID: #PAT-2024-001</p>
+          <p className="text-secondary-500 dark:text-secondary-400 mb-4">Patient ID: #{user.patient_code}</p>
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-500/20 text-sm font-medium">
             <Shield className="w-4 h-4 mr-2" />
             Verified Patient
@@ -138,6 +260,63 @@ const Profile = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Security Settings */}
+        <div className="lg:col-span-3 bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-800 p-6">
+          <h3 className="text-lg font-bold text-secondary-900 dark:text-white mb-6">Security Settings</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Current Password</label>
+              <div className="relative">
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                <input
+                  type="password"
+                  name="current_password"
+                  value={passwordData.current_password}
+                  onChange={handlePasswordChange}
+                  disabled={!isEditing}
+                  placeholder="Enter current password"
+                  className="w-full pl-10 pr-4 py-2 bg-secondary-50 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed text-secondary-900 dark:text-white placeholder:text-secondary-400"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">New Password</label>
+              <div className="relative">
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                <input
+                  type="password"
+                  name="new_password"
+                  value={passwordData.new_password}
+                  onChange={handlePasswordChange}
+                  disabled={!isEditing}
+                  placeholder="Enter new password"
+                  className="w-full pl-10 pr-4 py-2 bg-secondary-50 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed text-secondary-900 dark:text-white placeholder:text-secondary-400"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Confirm New Password</label>
+              <div className="relative">
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                <input
+                  type="password"
+                  name="new_password_confirmation"
+                  value={passwordData.new_password_confirmation}
+                  onChange={handlePasswordChange}
+                  disabled={!isEditing}
+                  placeholder="Confirm new password"
+                  className="w-full pl-10 pr-4 py-2 bg-secondary-50 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed text-secondary-900 dark:text-white placeholder:text-secondary-400"
+                />
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-secondary-500 dark:text-secondary-400 mt-4">
+            Leave password fields empty if you don't want to change your password.
+          </p>
         </div>
       </div>
     </div>

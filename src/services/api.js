@@ -6,7 +6,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true, // For Sanctum cookie-based auth if used, or just good practice
+  // withCredentials: true, // Commented out to fix CORS/Network Error if backend isn't configured for it
 });
 
 // Request interceptor for API calls

@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
               // Assuming /user endpoint exists or similar
               // For now, we might just trust the token exists until 401
               // But ideally we fetch user profile
-              const response = await api.get('/user');
+              const response = await api.get(`${API_ENDPOINTS.PATIENT.ME}`);
               setUser(response.data);
               setIsAuthenticated(true);
             } catch (error) {
@@ -74,10 +74,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, clinic_code = null) => {
   try {
-    const response = await api.post(`${import.meta.env.VITE_API_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
+    // Note: api.post  uses baseURL from axios config
+    const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, {
       email,
       password,
-      clinic_code: clinic_code === null ? null : clinic_code,
+      clinic_code: clinic_code === null ? '' : clinic_code,
     });
 
     const { token: newToken, user: userData } = response.data;
@@ -105,8 +106,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       // INTEGRATION: Use the correct endpoint from endpoints.js
-      // await api.post(API_ENDPOINTS.AUTH.LOGOUT);
-      await api.post('/logout');
+      await api.post(`${API_ENDPOINTS.AUTH.LOGOUT}`);
     } catch (error) {
       console.error('Logout error', error);
     } finally {
@@ -122,6 +122,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    setUser,
     token,
     isAuthenticated,
     isLoading,

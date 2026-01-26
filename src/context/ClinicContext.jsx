@@ -55,8 +55,8 @@ export const ClinicProvider = ({ children }) => {
     try {
       // INTEGRATION: Use the correct endpoint from endpoints.js
       // const response = await api.get(API_ENDPOINTS.PATIENT.AVAILABLE_CLINICS);
-      const response = await api.get('/patient/clinics'); // Adjust endpoint
-      setClinics(response.data.data || []);
+      const response = await api.get(`${API_ENDPOINTS.PATIENT.AVAILABLE_CLINICS}`); 
+      setClinics(response.data.clinics || []);
     } catch (error) {
       console.error('Failed to fetch clinics', error);
       // Don't toast here to avoid spam on login if it fails silently

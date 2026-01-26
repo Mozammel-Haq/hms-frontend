@@ -59,7 +59,7 @@ const TopBar = () => {
         <div className="flex items-center space-x-3 pl-4 border-l border-secondary-200 dark:border-secondary-800">
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-sm font-medium text-secondary-900 dark:text-white">{user?.name || 'Guest User'}</span>
-            <span className="text-xs text-secondary-500 dark:text-secondary-400">{user?.uhid || 'ID: ---'}</span>
+            <span className="text-xs font-semibold text-secondary-500 dark:text-secondary-400">{user?.patient_code || 'ID: ---'}</span>
           </div>
           <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold border border-white/10">
             {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
