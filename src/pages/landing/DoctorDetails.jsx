@@ -31,6 +31,21 @@ const DoctorDetails = () => {
         );
 
         const doc = response.data;
+        const parseSpecializations = (specialization) => {
+  if (!Array.isArray(specialization) || !specialization.length) return [];
+
+  try {
+    const parsed = JSON.parse(specialization[0]); // string → array
+    return parsed[0]
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
+const specializations = parseSpecializations(doc.specialization);
 
         const education = doc.educations?.length
           ? `${doc.educations[0].degree}, ${doc.educations[0].institution}`
@@ -61,9 +76,7 @@ const DoctorDetails = () => {
         setDoctor({
           id: doc.id,
           name: `Dr. ${doc.user?.name || 'Unknown'}`,
-          specialty: Array.isArray(doc.specialization)
-            ? doc.specialization.join(', ')
-            : doc.department?.name || 'Not specified',
+          specializations,
           education,
           experience: `${doc.experience_years || 0} Years`,
           rating: doc.appointments_count || 0,
@@ -117,8 +130,8 @@ const DoctorDetails = () => {
     <div className="pt-20 min-h-screen bg-secondary-50 dark:bg-secondary-950 transition-colors duration-300">
       {/* Profile Header */}
       <div className="bg-white dark:bg-secondary-900 border-b border-secondary-200 dark:border-secondary-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row gap-8 items-start">
+       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+          <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-start">
             {/* Image */}
             <div className="w-full md:w-64 flex-shrink-0">
               <div className="aspect-square rounded-2xl overflow-hidden shadow-sm border-4 border-white dark:border-secondary-800">
@@ -137,9 +150,23 @@ const DoctorDetails = () => {
                   <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">
                     {doctor.name}
                   </h1>
-                  <p className="text-xl text-primary-600 dark:text-primary-400 font-medium mt-1">
-                    {doctor.specialty}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+  {doctor.specializations.slice(0, 2).map((spec, index) => (
+    <span
+      key={index}
+      className="px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-medium"
+    >
+      {spec}
+    </span>
+  ))}
+
+  {doctor.specializations.length > 2 && (
+    <span className="px-3 py-1 rounded-full bg-secondary-200 dark:bg-secondary-700 text-sm font-medium cursor-default">
+      +{doctor.specializations.length - 2}
+    </span>
+  )}
+</div>
+
                 </div>
                 <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 rounded-full">
                   <Star className="w-5 h-5 text-yellow-500 fill-current" />
@@ -194,7 +221,7 @@ const DoctorDetails = () => {
                 Areas of Expertise
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {doctor.expertise.map((item, index) => (
+                {doctor.specializations.map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center text-secondary-700 dark:text-secondary-300"
@@ -209,7 +236,7 @@ const DoctorDetails = () => {
 
           {/* Right Column */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-secondary-900 rounded-xl p-6 shadow-lg border border-secondary-200 dark:border-secondary-800 sticky top-24">
+            <div className="bg-white dark:bg-secondary-900 rounded-xl p-6 shadow-sm border border-secondary-200 dark:border-secondary-800 sticky top-24">
               <h3 className="text-lg font-bold text-secondary-900 dark:text-white mb-4">
                 Book Appointment
               </h3>

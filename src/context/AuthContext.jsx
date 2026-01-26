@@ -72,25 +72,35 @@ export const AuthProvider = ({ children }) => {
       return true;
   };
 
-  const login = async (email, password) => {
-    try {
-      // Adjust endpoint as per Laravel Auth (e.g., /login or /sanctum/token)
-      const response = await api.post('/login', { email, password });
-      const { token: newToken, user: userData } = response.data;
+  const login = async (email, password, clinic_code = null) => {
+  try {
+    const response = await api.post(`${import.meta.env.VITE_API_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
+      email,
+      password,
+      clinic_code: clinic_code === null ? null : clinic_code,
+    });
 
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-      setUser(userData);
-      setIsAuthenticated(true);
+    const { token: newToken, user: userData } = response.data;
 
-      addToast('success', 'Logged in successfully');
-      return true;
-    } catch (error) {
-      console.error('Login failed', error);
-      addToast('error', error.response?.data?.message || 'Login failed');
-      return false;
-    }
-  };
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    setUser(userData);
+    setIsAuthenticated(true);
+
+    addToast('success', 'Logged in successfully');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Login failed', error);
+
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Login failed',
+      errors: error.response?.data?.errors,
+    };
+  }
+};
+
 
   const logout = useCallback(async () => {
     try {

@@ -158,7 +158,7 @@ const LocationDetails = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-secondary-900 rounded-2xl p-8 shadow-lg border border-secondary-200 dark:border-secondary-800 sticky top-24">
+            <div className="bg-white dark:bg-secondary-900 rounded-2xl p-8 shadow-sm border border-secondary-200 dark:border-secondary-800 sticky top-24">
               <h3 className="text-xl font-bold text-secondary-900 dark:text-white mb-6">Contact Information</h3>
               
               <div className="space-y-6">
