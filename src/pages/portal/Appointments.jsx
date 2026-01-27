@@ -1,57 +1,86 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Search, Filter, Plus, FileText, User } from 'lucide-react';
-import Button from '../../components/common/Button';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Search,
+  Filter,
+  Plus,
+  FileText,
+  User,
+} from "lucide-react";
+import Button from "../../components/common/Button";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../services/api";
+import API_ENDPOINTS from "../../services/endpoints";
 
 const Appointments = () => {
-  const [filter, setFilter] = useState('upcoming');
+  const [filter, setFilter] = useState("upcoming");
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Mock data
-  const appointments = [
-    {
-      id: 1,
-      doctor: 'Dr. Sarah Ahmed',
-      specialty: 'Cardiology',
-      date: '2023-10-25',
-      time: '10:00 AM',
-      status: 'Confirmed',
-      location: 'Room 302, Building A',
-      type: 'Follow-up'
-    },
-    {
-      id: 2,
-      doctor: 'Dr. Rahim Khan',
-      specialty: 'General Medicine',
-      date: '2023-11-02',
-      time: '02:30 PM',
-      status: 'Pending',
-      location: 'Room 105, Building B',
-      type: 'Consultation'
-    },
-    {
-      id: 3,
-      doctor: 'Dr. Emily Chen',
-      specialty: 'Dermatology',
-      date: '2023-09-15',
-      time: '11:15 AM',
-      status: 'Completed',
-      location: 'Room 204, Building A',
-      type: 'Check-up'
-    },
-  ];
+  const getAppointments = async () => {
+    try {
+      setLoading(true);
+      const response = await api.post(API_ENDPOINTS.PATIENT.APPOINTMENTS, {
+        clinic_id: user?.clinic_id,
+        patient_id: user?.id,
+      });
+      console.log(response.data);
+      setAppointments(response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch appointments", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredAppointments = appointments.filter(apt => {
-    if (filter === 'upcoming') return apt.status === 'Confirmed' || apt.status === 'Pending';
-    if (filter === 'past') return apt.status === 'Completed' || apt.status === 'Cancelled';
+  useEffect(() => {
+    if (user?.clinic_id) {
+      getAppointments();
+    }
+  }, [user?.clinic_id]);
+
+  const filteredAppointments = appointments.filter((apt) => {
+    if (filter === "upcoming")
+      return apt.status === "Confirmed" || apt.status === "Pending";
+    if (filter === "past")
+      return apt.status === "Completed" || apt.status === "Cancelled";
     return true;
   });
+
+  const getDateParts = (dateString) => {
+    const d = new Date(dateString);
+    return {
+      year: d.getFullYear(),
+      month: d.toLocaleString("en-US", { month: "short" }),
+      day: d.getDate(),
+    };
+  };
+
+  const getSpecializations = (doctor) => {
+    try {
+      const raw = doctor?.specialization?.[0];
+      if (!raw) return "";
+      const parsed = JSON.parse(raw);
+      return parsed.slice(0, 2).join(", ");
+    } catch {
+      return "";
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">My Appointments</h1>
-          <p className="text-secondary-500 dark:text-secondary-400 text-sm mt-1">Manage your upcoming visits and view history.</p>
+          <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">
+            My Appointments
+          </h1>
+          <p className="text-secondary-500 dark:text-secondary-400 text-sm mt-1">
+            Manage your upcoming visits and view history.
+          </p>
         </div>
         <Link to="/portal/appointments/book">
           <Button leftIcon={<Plus className="w-4 h-4" />}>
@@ -64,21 +93,21 @@ const Appointments = () => {
       <div className="bg-white dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-800 flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex bg-secondary-100 dark:bg-secondary-800 rounded-lg p-1 border border-secondary-200 dark:border-secondary-800">
           <button
-            onClick={() => setFilter('upcoming')}
+            onClick={() => setFilter("upcoming")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-              filter === 'upcoming'
-                ? 'bg-white dark:bg-primary-600 text-primary-600 dark:text-white'
-                : 'text-secondary-500 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-200 dark:hover:bg-secondary-700'
+              filter === "upcoming"
+                ? "bg-white dark:bg-primary-600 text-primary-600 dark:text-white"
+                : "text-secondary-500 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-200 dark:hover:bg-secondary-700"
             }`}
           >
             Upcoming
           </button>
           <button
-            onClick={() => setFilter('past')}
+            onClick={() => setFilter("past")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-              filter === 'past'
-                ? 'bg-white dark:bg-primary-600 text-primary-600 dark:text-white'
-                : 'text-secondary-500 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-200 dark:hover:bg-secondary-700'
+              filter === "past"
+                ? "bg-white dark:bg-primary-600 text-primary-600 dark:text-white"
+                : "text-secondary-500 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-200 dark:hover:bg-secondary-700"
             }`}
           >
             Past History
@@ -91,90 +120,154 @@ const Appointments = () => {
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-secondary-200 dark:border-secondary-800 rounded-md leading-5 bg-secondary-50 dark:bg-secondary-800 text-secondary-900 dark:text-white placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:placeholder-secondary-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 sm:text-sm transition-colors"
+            className="block w-full pl-10 pr-3 py-2 border border-secondary-200 dark:border-secondary-800 rounded-md leading-5 bg-secondary-50 dark:bg-secondary-800 text-secondary-900 dark:text-white placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 sm:text-sm"
             placeholder="Search doctor or specialty..."
           />
         </div>
       </div>
 
-      {/* Appointments List */}
-      <div className="space-y-4">
+{/* Appointments List */}
+      <div className="space-y-3">
         {filteredAppointments.length > 0 ? (
-          filteredAppointments.map((apt) => (
-            <div key={apt.id} className="bg-white dark:bg-secondary-900 rounded-lg border border-secondary-200 dark:border-secondary-800 overflow-hidden hover:border-primary-500/30 transition-colors">
-              <div className="p-6 flex flex-col lg:flex-row gap-6">
-                {/* Date Badge */}
-                <div className="flex-shrink-0 flex flex-row lg:flex-col items-center lg:items-center justify-start gap-4 lg:gap-1">
-                  <div className="bg-secondary-50 dark:bg-secondary-800 p-3 rounded-xl border border-secondary-200 dark:border-secondary-800 text-center min-w-[80px]">
-                    <span className="block text-xs font-bold text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">{apt.date.split('-')[1]}</span>
-                    <span className="block text-2xl font-bold text-secondary-900 dark:text-white">{apt.date.split('-')[2]}</span>
-                    <span className="block text-xs text-secondary-500">{apt.date.split('-')[0]}</span>
-                  </div>
-                  <div className="lg:hidden flex-1">
-                     <h3 className="text-lg font-bold text-secondary-900 dark:text-white">{apt.doctor}</h3>
-                     <p className="text-sm text-secondary-500 dark:text-secondary-400">{apt.specialty}</p>
-                  </div>
-                </div>
+          filteredAppointments.map((apt) => {
+            const { year, month, day } = getDateParts(apt.appointment_date);
+            const isUpcoming = apt.status === "Confirmed" || apt.status === "Pending";
 
-                {/* Details */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="hidden lg:block">
-                    <h3 className="text-lg font-bold text-secondary-900 dark:text-white flex items-center">
-                      {apt.doctor}
-                      <span className="ml-2 px-2 py-0.5 rounded-full bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-300 text-xs font-normal border border-secondary-200 dark:border-secondary-800">
-                        {apt.type}
-                      </span>
-                    </h3>
-                    <p className="text-sm text-primary-600 dark:text-primary-400 font-medium mb-2">{apt.specialty}</p>
-                    <p className="text-sm text-secondary-500 dark:text-secondary-400 flex items-center mt-1">
-                      <MapPin className="w-4 h-4 mr-1.5 text-secondary-400 dark:text-secondary-500" />
-                      {apt.location}
-                    </p>
-                  </div>
+            return (
+              <div
+                key={apt.id}
+                className="group bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden hover:shadow-sm hover:border-primary-400 dark:hover:border-primary-500 transition-all duration-200"
+              >
+                <div className="p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                    {/* Date Badge */}
+                    <div className="flex-shrink-0">
+                      <div className="inline-flex sm:flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl border-2 border-primary-200 dark:border-primary-700 p-4 min-w-[88px] shadow-sm">
+                        <span className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wide">
+                          {month}
+                        </span>
+                        <span className="text-3xl font-bold text-primary-700 dark:text-primary-300 leading-none my-1">
+                          {day}
+                        </span>
+                        <span className="text-xs font-medium text-primary-600/70 dark:text-primary-400/70">
+                          {year}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-secondary-500 dark:text-secondary-400">
-                      <Clock className="w-4 h-4 mr-2 text-secondary-400 dark:text-secondary-500" />
-                      <span className="font-medium text-secondary-700 dark:text-secondary-300">Time:</span>
-                      <span className="ml-2">{apt.time}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-secondary-500 dark:text-secondary-400">
-                      <User className="w-4 h-4 mr-2 text-secondary-400 dark:text-secondary-500" />
-                      <span className="font-medium text-secondary-700 dark:text-secondary-300">Doctor ID:</span>
-                      <span className="ml-2">#{1000 + apt.id}</span>
-                    </div>
-                    <div className="flex items-center mt-2">
-                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                        apt.status === 'Confirmed' ? 'bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/20' :
-                        apt.status === 'Pending' ? 'bg-yellow-100 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/20' :
-                        apt.status === 'Completed' ? 'bg-secondary-100 dark:bg-secondary-500/10 text-secondary-600 dark:text-secondary-400 border-secondary-200 dark:border-secondary-500/20' :
-                        'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20'
-                      }`}>
-                        {apt.status}
-                      </span>
+                    {/* Main Content */}
+                    <div className="flex-1 min-w-0">
+                      {/* Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-lg sm:text-xl font-bold text-secondary-900 dark:text-white truncate">
+                              {apt.doctor?.user?.name}
+                            </h3>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                                apt.status === "Confirmed"
+                                  ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700"
+                                  : apt.status === "Pending"
+                                  ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700"
+                                  : apt.status === "Completed"
+                                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700"
+                                  : "bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700"
+                              }`}
+                            >
+                              {apt.status}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="inline-flex items-center px-3 py-1 rounded-lg bg-secondary-100 dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 font-medium border border-secondary-200 dark:border-secondary-700">
+                              {getSpecializations(apt.doctor)}
+                            </span>
+                            <span className="inline-flex items-center px-3 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium border border-primary-200 dark:border-primary-700">
+                              {apt.appointment_type}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary-50 dark:bg-secondary-800/50 border border-secondary-100 dark:border-secondary-700/50">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600">
+                            <Clock className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-secondary-500 dark:text-secondary-400 mb-0.5">
+                              Appointment Time
+                            </p>
+                            <p className="text-sm font-semibold text-secondary-900 dark:text-white">
+                              {apt.start_time} – {apt.end_time}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary-50 dark:bg-secondary-800/50 border border-secondary-100 dark:border-secondary-700/50">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600">
+                            <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-secondary-500 dark:text-secondary-400 mb-0.5">
+                              Location
+                            </p>
+                            <p className="text-sm font-semibold text-secondary-900 dark:text-white">
+                              Room {apt.doctor?.consultation_room_number}, Floor {apt.doctor?.consultation_floor}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-secondary-100 dark:border-secondary-800">
+                        {isUpcoming ? (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="flex-1 sm:flex-none min-w-[140px] font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-300 hover:border-primary-300 dark:hover:border-primary-600 transition-colors"
+                            >
+                              <Calendar className="w-4 h-4 mr-2" />
+                              Reschedule
+                            </Button>
+                            <Button 
+                              variant="danger" 
+                              size="sm"
+                              className="flex-1 sm:flex-none min-w-[140px] font-semibold"
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1 sm:flex-none min-w-[140px] font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors"
+                          >
+                            View Summary
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-row lg:flex-col justify-end lg:justify-center gap-2 border-t lg:border-t-0 lg:border-l border-secondary-200 dark:border-secondary-800 pt-4 lg:pt-0 lg:pl-6">
-                  {apt.status === 'Confirmed' || apt.status === 'Pending' ? (
-                    <>
-                      <Button variant="outline" size="sm" className="w-full border-secondary-200 dark:border-secondary-800 text-secondary-600 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-50 dark:hover:bg-secondary-800">Reschedule</Button>
-                      <Button variant="danger" size="sm" className="w-full bg-transparent text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/50 hover:bg-red-50 dark:hover:bg-red-500/10 shadow-none">Cancel</Button>
-                    </>
-                  ) : (
-                    <Button variant="outline" size="sm" className="w-full border-secondary-200 dark:border-secondary-800 text-secondary-600 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-50 dark:hover:bg-secondary-800">View Summary</Button>
-                  )}
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
-          <div className="text-center py-12 bg-white dark:bg-secondary-900 rounded-lg border border-secondary-200 dark:border-secondary-800 border-dashed">
-            <Calendar className="w-12 h-12 mx-auto text-secondary-400 dark:text-secondary-600 mb-3" />
-            <h3 className="text-lg font-medium text-secondary-900 dark:text-white">No appointments found</h3>
-            <p className="text-secondary-500 dark:text-secondary-400 mt-1">Try adjusting your filters or book a new appointment.</p>
+          <div className="text-center py-16 bg-gradient-to-br from-secondary-50 to-white dark:from-secondary-900 dark:to-secondary-900/50 rounded-2xl border-2 border-dashed border-secondary-300 dark:border-secondary-700">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary-100 dark:bg-secondary-800 mb-4">
+              <Calendar className="w-8 h-8 text-secondary-400 dark:text-secondary-500" />
+            </div>
+            <h3 className="text-lg font-bold text-secondary-900 dark:text-white mb-2">
+              No appointments found
+            </h3>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400 max-w-sm mx-auto">
+              Try adjusting your filters or book a new appointment to get started.
+            </p>
           </div>
         )}
       </div>
