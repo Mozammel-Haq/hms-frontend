@@ -39,9 +39,11 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: "/patient/profile/change-password",
 
     // Appointments
+    DOCTORS: "/patient/doctors",
     APPOINTMENTS: "/patient/appointments", // GET list
     APPOINTMENT_DETAILS: (id) => `/patient/appointments/${id}`,
     BOOK_APPOINTMENT: "/patient/appointments", // POST
+    APPOINTMENT_SLOTS: "/patient/appointments/slots", // GET available slots
     CANCEL_APPOINTMENT: (id) => `/patient/appointments/${id}/cancel`, // POST/PUT
 
     // Medical Records (Read Only)

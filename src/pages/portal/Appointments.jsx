@@ -14,40 +14,50 @@ import Button from "../../components/common/Button";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 import API_ENDPOINTS from "../../services/endpoints";
+import { useClinic } from "../../context/ClinicContext";
+import MedicalLoader from "../../components/loaders/MedicalLoader";
 
 const Appointments = () => {
   const [filter, setFilter] = useState("upcoming");
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-
+  const {activeClinicId} = useClinic();
+  // console.log(user);
   const getAppointments = async () => {
     try {
       setLoading(true);
-      const response = await api.post(API_ENDPOINTS.PATIENT.APPOINTMENTS, {
-        clinic_id: user?.clinic_id,
-        patient_id: user?.id,
+
+      // The clinic_id is handled by the API interceptor (X-Clinic-ID header),
+      
+      const response = await api.get(API_ENDPOINTS.PATIENT.APPOINTMENTS, {
+        params: {
+          patient_id: user?.id
+        }
       });
-      console.log(response.data);
-      setAppointments(response.data || []);
+      
+      console.log('Appointments Response:', response.data);
+      setAppointments(response.data.appointments || []);
     } catch (error) {
       console.error("Failed to fetch appointments", error);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user?.clinic_id) {
+    if (activeClinicId) {
       getAppointments();
     }
-  }, [user?.clinic_id]);
-
+  }, [activeClinicId]);
+  console.log(appointments);
   const filteredAppointments = appointments.filter((apt) => {
+    const status = apt.status?.toLowerCase();
     if (filter === "upcoming")
-      return apt.status === "Confirmed" || apt.status === "Pending";
+      return status === "confirmed" || status === "pending";
     if (filter === "past")
-      return apt.status === "Completed" || apt.status === "Cancelled";
+      return status === "completed" || status === "cancelled";
     return true;
   });
 
@@ -62,7 +72,21 @@ const Appointments = () => {
 
   const getSpecializations = (doctor) => {
     try {
-      const raw = doctor?.specialization?.[0];
+      if (!doctor?.specialization) return "";
+      
+      // If it's already an array (e.g. from JSON cast in Laravel)
+      if (Array.isArray(doctor.specialization)) {
+        const first = doctor.specialization[0];
+        // Check if nested array like [["Mental Health", "Psychiatry"]]
+        if (Array.isArray(first)) {
+            return first.slice(0, 2).join(", ");
+        }
+        // Flat array like ["Mental Health", "Psychiatry"]
+        return doctor.specialization.slice(0, 2).join(", ");
+      }
+
+      // Fallback for string format
+      const raw = doctor.specialization[0];
       if (!raw) return "";
       const parsed = JSON.parse(raw);
       return parsed.slice(0, 2).join(", ");
@@ -126,12 +150,19 @@ const Appointments = () => {
         </div>
       </div>
 
-{/* Appointments List */}
+
+      {/* Appointments List */}
+      
       <div className="space-y-3">
-        {filteredAppointments.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <MedicalLoader text="Loading appointments..." />
+          </div>
+        ) : filteredAppointments.length > 0 ? (
           filteredAppointments.map((apt) => {
             const { year, month, day } = getDateParts(apt.appointment_date);
-            const isUpcoming = apt.status === "Confirmed" || apt.status === "Pending";
+            const status = apt.status?.toLowerCase();
+            const isUpcoming = status === "confirmed" || status === "pending";
 
             return (
               <div
@@ -166,11 +197,11 @@ const Appointments = () => {
                             </h3>
                             <span
                               className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
-                                apt.status === "Confirmed"
+                                status === "confirmed"
                                   ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700"
-                                  : apt.status === "Pending"
+                                  : status === "pending"
                                   ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700"
-                                  : apt.status === "Completed"
+                                  : status === "completed"
                                   ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700"
                                   : "bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700"
                               }`}
@@ -271,6 +302,7 @@ const Appointments = () => {
           </div>
         )}
       </div>
+
     </div>
   );
 };

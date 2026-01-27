@@ -38,7 +38,7 @@ export default {
         sans: ["Inter", "sans-serif"],
       },
       animation: {
-        ecg: "ecg 0.1s linear infinite",
+        ecg: "ecg 0.3s linear infinite",
       },
       keyframes: {
         ecg: {

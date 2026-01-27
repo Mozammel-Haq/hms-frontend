@@ -67,7 +67,7 @@ const Doctors = () => {
           name: `Dr. ${doc.user.name}`,
           specialty: doc.department?.name || doc.specialization,
           image: doc.profile_photo
-            ? `http://127.0.0.1:8000/${doc.profile_photo}`
+            ? `${import.meta.env.VITE_BACKEND_BASE_URL}/${doc.profile_photo}`
             : '/default-doctor.png',
           rating: doc.appointments_count || 0,
           reviews: 'Appointments',
