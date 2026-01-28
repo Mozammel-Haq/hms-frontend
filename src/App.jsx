@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import ToastContainer from './components/common/ToastContainer';
 import PublicLayout from './components/layout/PublicLayout';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 import LandingHome from './pages/landing/Home';
@@ -44,6 +45,7 @@ const NotFound = () => (
 function App() {
   return (
     <ThemeProvider>
+      <ToastContainer />
       <Routes>
         {/* Public Routes */}
         <Route element={<PublicLayout />}>

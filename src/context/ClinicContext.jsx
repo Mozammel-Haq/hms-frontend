@@ -45,13 +45,6 @@ export const ClinicProvider = ({ children }) => {
   }, [activeClinicId, clinics]);
 
   const fetchClinics = async () => {
-    if (token === 'demo_token') {
-        setClinics([
-            { id: 1, name: 'Dhanmondi CityCare', address: '123 Satmasjid Road' },
-            { id: 2, name: 'Gulshan Specialist Clinic', address: '45 Gulshan Avenue' }
-        ]);
-        return;
-    }
     try {
       // INTEGRATION: Use the correct endpoint from endpoints.js
       // const response = await api.get(API_ENDPOINTS.PATIENT.AVAILABLE_CLINICS);

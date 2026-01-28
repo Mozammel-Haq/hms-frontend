@@ -60,7 +60,7 @@ const Navbar = () => {
               <Phone className="w-4 h-4 mr-2" />
               <span>+880 1234 567890</span>
             </div>
-            <Link to="/portal/login">
+            <Link to="/portal">
               <Button variant="primary" size="sm" leftIcon={<UserCircle className="w-4 h-4" />}>
                 Patient Portal
               </Button>

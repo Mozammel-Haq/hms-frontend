@@ -5,9 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import { formatDate } from 'date-fns';
 import API_ENDPOINTS from '../../services/endpoints';
 import api from '../../services/api';
+import { useUI } from '../../context/UIContext';
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const { addToast } = useUI();
   const [user, setUser] = useState({
     name: '',
     email: '',
@@ -25,6 +27,7 @@ const Profile = () => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null); // NEW: Separate preview state
   const { user: authUser, setUser: setAuthUser } = useAuth();
+  // toast for success and error messages
 
   useEffect(() => {
     if (authUser) {
@@ -95,7 +98,8 @@ const Profile = () => {
         },
       });
       console.log(response.data)
-      
+      addToast('success', 'Profile updated successfully');
+
       if (response.status === 200) {
         // Update authUser with the data from response (response.data.data contains the patient object)
         const updatedPatient = response.data.data;
@@ -104,9 +108,11 @@ const Profile = () => {
         setAvatarFile(null);
         setAvatarPreview(null); // Clear preview after save
         setPasswordData({ current_password: '', new_password: '', new_password_confirmation: '' }); // Reset password fields
+
         console.log('Profile updated successfully');
       }
     } catch (error) {
+      addToast('error', 'Failed to update profile');
       console.error('Failed to update profile:', error);
       if (error.response) {
         console.error('Error details:', error.response.data);

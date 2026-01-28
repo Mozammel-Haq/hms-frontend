@@ -26,15 +26,6 @@ export const AuthProvider = ({ children }) => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
-        if (storedToken === 'demo_token') {
-            setUser({
-                id: 1,
-                name: 'Demo Patient',
-                email: 'patient@example.com',
-                role: 'patient'
-            });
-            setIsAuthenticated(true);
-        } else {
             try {
               // Verify token and get user data
               // Assuming /user endpoint exists or similar
@@ -47,30 +38,13 @@ export const AuthProvider = ({ children }) => {
               console.error('Auth initialization failed', error);
               logout();
             }
-        }
+        
       }
       setIsLoading(false);
     };
 
     initAuth();
   }, []);
-
-  const loginDemo = async () => {
-      const mockUser = {
-          id: 1,
-          name: 'Demo Patient',
-          email: 'patient@example.com',
-          role: 'patient'
-      };
-      const mockToken = 'demo_token';
-
-      localStorage.setItem('token', mockToken);
-      setToken(mockToken);
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      addToast('success', 'Logged in as Demo User');
-      return true;
-  };
 
   const login = async (email, password, clinic_code = null) => {
   try {
@@ -127,7 +101,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     isLoading,
     login,
-    loginDemo,
     logout,
   };
 

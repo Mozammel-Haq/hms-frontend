@@ -62,7 +62,11 @@ const TopBar = () => {
             <span className="text-xs font-semibold text-secondary-500 dark:text-secondary-400">{user?.patient_code || 'ID: ---'}</span>
           </div>
           <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold border border-white/10">
-            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            {user.profile_photo ? (
+              <img src={`${import.meta.env.VITE_BACKEND_BASE_URL}/${user.profile_photo}`} alt="User Profile" className="h-8 w-8 rounded-full" />
+            ) : (
+              <span className="text-xs font-bold">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+            )}
           </div>
         </div>
       </div>

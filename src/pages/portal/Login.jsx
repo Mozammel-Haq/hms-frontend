@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,10 +17,16 @@ const loginSchema = z.object({
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showClinicCode, setShowClinicCode] = useState(false);
+  const { login, isAuthenticated } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/portal/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const from = location.state?.from?.pathname || '/portal/dashboard';
 
@@ -36,14 +42,11 @@ const Login = () => {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      // NOTE: Ensure your useAuth login function returns an object: { success: boolean, errors?: any, message?: string }
-      // instead of just a boolean. Pass clinic_code as the third argument.
       const response = await login(data.email, data.password, data.clinic_code);
       console.log(response);
       if (response?.success) {
         navigate(from, { replace: true });
       } else {
-        // Handle specific "Multiple accounts" error from backend
         if (response?.errors?.clinic_code) {
           setShowClinicCode(true);
           setError('clinic_code', {
@@ -68,11 +71,6 @@ const Login = () => {
       setIsSubmitting(false);
     }
   };
-
-  const handleDemoLogin = async () => {
-    await loginDemo();
-    navigate(from, { replace: true });
-  };
   // console.log(data.clinic_code)
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-300 bg-secondary-50 dark:bg-secondary-950">
@@ -93,7 +91,7 @@ const Login = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-white dark:bg-secondary-900 py-8 px-4 sm:rounded-2xl sm:px-10 border border-secondary-200 dark:border-secondary-800 transition-colors duration-300">
+        <div className="bg-white dark:bg-secondary-900 py-8 px-4 sm:rounded-2xl sm:px-10 border border-primary-200 dark:border-primary-800 transition-colors duration-300">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
 
             {/* Clinic Code Field - Only shown when needed */}
@@ -231,14 +229,6 @@ const Login = () => {
                 isLoading={isSubmitting}
               >
                 Sign in
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full mt-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-500/50 justify-center py-3"
-                onClick={handleDemoLogin}
-              >
-                Demo Login (Preview)
               </Button>
             </div>
           </form>
