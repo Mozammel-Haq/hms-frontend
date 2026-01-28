@@ -68,7 +68,8 @@ const BookAppointment = () => {
         const response = await api.get(API_ENDPOINTS.PATIENT.DOCTORS);
         console.log("API Response:", response.data);
         // The endpoint returns { doctors: [...], departments: [...], clinics: [...] }
-        const { doctors: docs = [], departments: depts = [] } = response.data;
+        const { departments: depts = [] } = response.data;
+        const { doctors: docs = [] } = response.data.clinics?.[0] || {};
         
         setDoctors(docs);
         setDepartments(depts);
